@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="selected_text_color">#1db0b8</color>
+    <color name="unselected_text_color">#727272</color>
+    <color name="divider_color">#80808080</color>
+</resources>

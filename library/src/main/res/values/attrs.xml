@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="WheelView">
+        <attr name="cyclic" format="boolean"/>
+        <attr name="entries" format="reference"/>
+        <attr name="visibleItems" format="integer"/>
+        <attr name="lineSpace" format="dimension"/>
+        <attr name="textSize" format="dimension"/>
+        <attr name="selectedColor" format="color"/>
+        <attr name="unselectedColor" format="color"/>
+        <attr name="dividerTop" format="reference"/>
+        <attr name="dividerBottom" format="reference"/>
+    </declare-styleable>
+
+    <declare-styleable name="Wheel3DView">
+        <attr name="toward" format="enum">
+            <enum name="none" value="0"/>
+            <enum name="left" value="-1"/>
+            <enum name="right" value="1"/>
+        </attr>
+    </declare-styleable>
+</resources>
