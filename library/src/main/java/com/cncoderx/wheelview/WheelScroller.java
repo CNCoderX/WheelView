@@ -9,20 +9,19 @@ import android.widget.Scroller;
  * @author cncoderx
  */
 public class WheelScroller extends Scroller {
-    private boolean cyclic;
     private int mScrollOffset;
     private float lastTouchY;
     private boolean isScrolling;
 
-    final WheelView mAttachedView;
+    final WheelView mWheelView;
     private VelocityTracker mVelocityTracker;
     OnWheelChangedListener onWheelChangedListener;
 
     public static final int JUSTIFY_DURATION = 400;
 
-    public WheelScroller(Context context, WheelView attachedView) {
+    public WheelScroller(Context context, WheelView wheelView) {
         super(context);
-        mAttachedView = attachedView;
+        mWheelView = wheelView;
     }
 
     public void computeScroll() {
@@ -30,7 +29,7 @@ public class WheelScroller extends Scroller {
             isScrolling = computeScrollOffset();
             doScroll(getCurrY() - mScrollOffset);
             if (isScrolling) {
-                mAttachedView.postInvalidate();
+                mWheelView.postInvalidate();
             } else {
                 // 滚动结束后，重新调整位置
                 justify();
@@ -42,36 +41,32 @@ public class WheelScroller extends Scroller {
 
     private void doScroll(int distance) {
         mScrollOffset += distance;
-        if (!cyclic) {
+        if (!mWheelView.isCyclic()) {
             // 限制滚动边界
-            final int maxOffset = (mAttachedView.getItemSize() - 1) * mAttachedView.itemHeight;
+            final int maxOffset = (mWheelView.getItemSize() - 1) * mWheelView.itemHeight;
             if (mScrollOffset < 0) {
                 mScrollOffset = 0;
             } else if (mScrollOffset > maxOffset) {
                 mScrollOffset = maxOffset;
             }
         }
+        notifyWheelChangedListener();
+    }
+
+    void notifyWheelChangedListener() {
         int oldValue = currentIndex;
         int newValue = getCurrentIndex();
         if (oldValue != newValue) {
             currentIndex = newValue;
             if (onWheelChangedListener != null) {
-                onWheelChangedListener.onChanged(mAttachedView, oldValue, newValue);
+                onWheelChangedListener.onChanged(mWheelView, oldValue, newValue);
             }
         }
     }
 
-    public boolean isCyclic() {
-        return cyclic;
-    }
-
-    public void setCyclic(boolean cyclic) {
-        this.cyclic = cyclic;
-    }
-
     public int getCurrentIndex() {
-        final int itemHeight = mAttachedView.itemHeight;
-        final int itemSize = mAttachedView.getItemSize();
+        final int itemHeight = mWheelView.itemHeight;
+        final int itemSize = mWheelView.getItemSize();
         if (itemSize == 0) return 0;
 
         int itemIndex;
@@ -88,49 +83,56 @@ public class WheelScroller extends Scroller {
     }
 
     public void setCurrentIndex(int index, boolean animated) {
-        int position = index * mAttachedView.itemHeight;
+        int position = index * mWheelView.itemHeight;
         int distance = position - mScrollOffset;
         if (distance == 0) return;
         if (animated) {
             isScrolling = true;
             startScroll(0, mScrollOffset, 0, distance, JUSTIFY_DURATION);
-            mAttachedView.invalidate();
+            mWheelView.invalidate();
         } else {
             doScroll(distance);
-            mAttachedView.invalidate();
+            mWheelView.invalidate();
         }
     }
 
     public int getItemIndex() {
-        return mAttachedView.itemHeight == 0 ? 0 : mScrollOffset / mAttachedView.itemHeight;
+        return mWheelView.itemHeight == 0 ? 0 : mScrollOffset / mWheelView.itemHeight;
     }
 
     public int getItemOffset() {
-        return mAttachedView.itemHeight == 0 ? 0 : mScrollOffset % mAttachedView.itemHeight;
+        return mWheelView.itemHeight == 0 ? 0 : mScrollOffset % mWheelView.itemHeight;
+    }
+
+    public void reset() {
+        isScrolling = false;
+        mScrollOffset = 0;
+        notifyWheelChangedListener();
+        forceFinished(true);
     }
 
     /**
      * 当滚轮结束滑行后，调整滚轮的位置，需要调用该方法
      */
     void justify() {
-        final int itemHeight = mAttachedView.itemHeight;
+        final int itemHeight = mWheelView.itemHeight;
         final int offset = mScrollOffset % itemHeight;
         if (offset > 0 && offset < itemHeight / 2) {
             isScrolling = true;
             startScroll(0, mScrollOffset, 0, -offset, JUSTIFY_DURATION);
-            mAttachedView.invalidate();
+            mWheelView.invalidate();
         } else if (offset >= itemHeight / 2) {
             isScrolling = true;
             startScroll(0, mScrollOffset, 0, itemHeight - offset, JUSTIFY_DURATION);
-            mAttachedView.invalidate();
+            mWheelView.invalidate();
         } else if (offset < 0 && offset > -itemHeight / 2) {
             isScrolling = true;
             startScroll(0, mScrollOffset, 0, -offset, JUSTIFY_DURATION);
-            mAttachedView.invalidate();
+            mWheelView.invalidate();
         } else if (offset <= -itemHeight / 2) {
             isScrolling = true;
             startScroll(0, mScrollOffset, 0, -itemHeight - offset, JUSTIFY_DURATION);
-            mAttachedView.invalidate();
+            mWheelView.invalidate();
         }
     }
 
@@ -150,7 +152,7 @@ public class WheelScroller extends Scroller {
                 int deltaY = (int) (touchY - lastTouchY);
                 if (deltaY != 0) {
                     doScroll(-deltaY);
-                    mAttachedView.invalidate();
+                    mWheelView.invalidate();
                 }
                 lastTouchY = touchY;
                 break;
@@ -161,7 +163,7 @@ public class WheelScroller extends Scroller {
                 if (Math.abs(velocityY) > 0) {
                     isScrolling = true;
                     fling(0, mScrollOffset, 0, (int) -velocityY, 0, 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
-                    mAttachedView.invalidate();
+                    mWheelView.invalidate();
                 } else {
                     justify();
                 }

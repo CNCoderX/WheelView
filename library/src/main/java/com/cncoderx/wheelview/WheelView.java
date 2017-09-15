@@ -274,7 +274,7 @@ public class WheelView extends View {
 
     public void setCyclic(boolean cyclic) {
         mCyclic = cyclic;
-        mScroller.setCyclic(cyclic);
+        mScroller.reset();
         invalidate();
     }
 
@@ -284,7 +284,9 @@ public class WheelView extends View {
 
     public void setVisibleItems(int visibleItems) {
         mVisibleItems = Math.abs(visibleItems / 2 * 2 + 1); // 当传入的值为偶数时,换算成奇数;
+        mScroller.reset();
         requestLayout();
+        invalidate();
     }
 
     public int getLineSpace() {
@@ -293,7 +295,10 @@ public class WheelView extends View {
 
     public void setLineSpace(int lineSpace) {
         mLineSpace = lineSpace;
+        mScroller.reset();
+        measureItemSize();
         requestLayout();
+        invalidate();
     }
 
     public int getTextSize() {
@@ -305,8 +310,10 @@ public class WheelView extends View {
         mPaint.setTextSize(textSize);
         Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
         baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
+        mScroller.reset();
         measureItemSize();
         requestLayout();
+        invalidate();
     }
 
     public int getSelectedColor() {
@@ -334,6 +341,7 @@ public class WheelView extends View {
     public void setDividerTop(Drawable dividerTop) {
         mDividerTop = dividerTop;
         requestLayout();
+        invalidate();
     }
 
     public Drawable getDividerBottom() {
@@ -343,6 +351,7 @@ public class WheelView extends View {
     public void setDividerBottom(Drawable dividerBottom) {
         mDividerBottom = dividerBottom;
         requestLayout();
+        invalidate();
     }
 
     public int getItemSize() {
@@ -377,9 +386,10 @@ public class WheelView extends View {
         if (entries != null && entries.length > 0) {
             Collections.addAll(mEntries, entries);
         }
+        mScroller.reset();
         measureItemSize();
-        mScroller.setCurrentIndex(0, false);
         requestLayout();
+        invalidate();
     }
 
     public OnWheelChangedListener getOnWheelChangedListener() {
