@@ -1,13 +1,11 @@
 package com.cncoderx.wheelview;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
+import android.text.Layout;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -30,14 +28,13 @@ public class WheelView extends View {
     private Drawable mDividerTop;
     private Drawable mDividerBottom;
 
-    boolean itemSizeChanged = true;
     int centerX;
     int centerY;
     int upperLimit;
     int lowerLimit;
     int baseline;
-    int maxTextWidth;
-    int maxTextHeight;
+    int itemWidth;
+    int itemHeight;
 
     Paint mPaint;
     WheelScroller mScroller;
@@ -49,18 +46,8 @@ public class WheelView extends View {
     }
 
     public WheelView(Context context, AttributeSet attrs) {
-        this(context, attrs, 0, R.style.WheelView);
-
-    }
-
-    public WheelView(Context context, AttributeSet attrs, int defStyleAttr) {
-        this(context, attrs, defStyleAttr, R.style.WheelView);
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public WheelView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.WheelView, defStyleAttr, defStyleRes);
+        super(context, attrs);
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.WheelView, 0, R.style.WheelView);
         boolean cyclic = a.getBoolean(R.styleable.WheelView_cyclic, false);
         int visibleItems = a.getInt(R.styleable.WheelView_visibleItems, mVisibleItems);
         int lineSpace = a.getDimensionPixelOffset(R.styleable.WheelView_lineSpace, mLineSpace);
@@ -71,6 +58,10 @@ public class WheelView extends View {
         Drawable dividerBottom = a.getDrawable(R.styleable.WheelView_dividerBottom);
         CharSequence[] entries = a.getTextArray(R.styleable.WheelView_entries);
         a.recycle();
+
+        mPaint = new TextPaint();
+        mPaint.setAntiAlias(true);
+        mPaint.setTextAlign(Paint.Align.CENTER);
 
         mScroller = new WheelScroller(context, this);
 
@@ -83,19 +74,6 @@ public class WheelView extends View {
         setDividerTop(dividerTop);
         setDividerBottom(dividerBottom);
         setEntries(entries);
-
-        initPaint();
-    }
-
-    private void initPaint() {
-        TextPaint paint = new TextPaint();
-        paint.setTextSize(mTextSize);
-        paint.setAntiAlias(true);
-        paint.setColor(mUnselectedColor);
-        paint.setTextAlign(Paint.Align.CENTER);
-        Paint.FontMetrics fontMetrics = paint.getFontMetrics();
-        baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
-        this.mPaint = paint;
     }
 
     @Override
@@ -119,16 +97,14 @@ public class WheelView extends View {
 
         centerX = (getMeasuredWidth() + getPaddingLeft() - getPaddingRight()) / 2;
         centerY = (getMeasuredHeight() + getPaddingTop() - getPaddingBottom()) / 2;
-
-        mScroller.setItemHeight(getItemHeight());
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         // 计算上方分割线的高度
-        upperLimit = centerY - mScroller.getItemHeight() / 2;
+        upperLimit = centerY - itemHeight / 2;
         // 计算下方分割线的高度
-        lowerLimit = centerY + mScroller.getItemHeight() / 2;
+        lowerLimit = centerY + itemHeight / 2;
         if (mDividerTop != null) {
             int h = mDividerTop.getIntrinsicHeight();
             mDividerTop.setBounds(getPaddingLeft(), upperLimit, getWidth() - getPaddingRight(), upperLimit + h);
@@ -140,35 +116,11 @@ public class WheelView extends View {
     }
 
     /**
-     * 当选项文字的尺寸发生改变时，计算每一项最大尺寸
-     */
-    void measureItemBounds() {
-        if (itemSizeChanged) {
-            maxTextWidth = 0;
-            maxTextHeight = 0;
-            Rect bounds = new Rect();
-            if (mEntries.size() == 0) {
-                mPaint.getTextBounds("0", 0, 1, bounds);
-                maxTextWidth = Math.max(maxTextWidth, bounds.width());
-                maxTextHeight = Math.max(maxTextHeight, bounds.height());
-            } else {
-                for (CharSequence cs : mEntries) {
-                    mPaint.getTextBounds((String) cs, 0, cs.length(), bounds);
-                    maxTextWidth = Math.max(maxTextWidth, bounds.width());
-                    maxTextHeight = Math.max(maxTextHeight, bounds.height());
-                }
-            }
-            itemSizeChanged = false;
-        }
-    }
-
-    /**
      * @return 控件的预算宽度
      */
     public int getPrefWidth() {
-        measureItemBounds();
         int padding = getPaddingLeft() + getPaddingRight();
-        int innerWidth = (int) (maxTextWidth + mTextSize * .5f);
+        int innerWidth = (int) (itemWidth + mTextSize * .5f);
         return innerWidth + padding;
     }
 
@@ -176,9 +128,8 @@ public class WheelView extends View {
      * @return 控件的预算高度
      */
     public int getPrefHeight() {
-        measureItemBounds();
         int padding = getPaddingTop() + getPaddingBottom();
-        int innerHeight = getItemHeight() * mVisibleItems;
+        int innerHeight = itemHeight * mVisibleItems;
         return innerHeight + padding;
     }
 
@@ -186,16 +137,25 @@ public class WheelView extends View {
      * 根据控件的测量高度，计算可见项的数量
      */
     protected void calcVisibleItems() {
-        measureItemBounds();
         int innerHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-        int items = innerHeight / getItemHeight();
+        int items = innerHeight / itemHeight;
         setVisibleItems(items);
     }
 
-    public final int getItemHeight() {
-        return maxTextHeight + mLineSpace;
+    void measureItemSize() {
+        int width = 0;
+        for (CharSequence cs : mEntries) {
+            float w = Layout.getDesiredWidth(cs, (TextPaint) mPaint);
+            width = Math.max(width, Math.round(w));
+        }
+        int height = Math.round(mPaint.getFontMetricsInt(null) + mLineSpace);
+        itemWidth = width;
+        if (itemHeight != height) {
+            // 每一项的高度改变时，需要重新计算滚动偏移量；
+//            mScroller.setCurrentIndex(mScroller.getCurrentIndex(), false);
+            itemHeight = height;
+        }
     }
-
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -229,17 +189,15 @@ public class WheelView extends View {
         if (text == null) return;
 
         // 和中间选项的距离
-        final int range = (index - mScroller.getItemIndex()) * mScroller.getItemHeight() - offset;
+        final int range = (index - mScroller.getItemIndex()) * itemHeight - offset;
 
         int clipLeft = getPaddingLeft();
         int clipRight = getWidth() - getPaddingRight();
         int clipTop = getPaddingTop();
         int clipBottom = getHeight() - getPaddingBottom();
 
-        int dl = mLineSpace / 2;
-        int dh = dl + maxTextHeight;
         // 绘制两条分界线之间的文字
-        if (Math.abs(range) <= dl) {
+        if (Math.abs(range) <= 0) {
             mPaint.setColor(mSelectedColor);
             canvas.save();
             canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
@@ -247,7 +205,7 @@ public class WheelView extends View {
             canvas.restore();
         }
         // 绘制与下分界线相交的文字
-        else if (range > dl && range < dh) {
+        else if (range > 0 && range < itemHeight) {
             mPaint.setColor(mSelectedColor);
             canvas.save();
             canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
@@ -261,7 +219,7 @@ public class WheelView extends View {
             canvas.restore();
         }
         // 绘制与上分界线相交的文字
-        else if (range < -dl && range > -dh) {
+        else if (range < 0 && range > -itemHeight) {
             mPaint.setColor(mSelectedColor);
             canvas.save();
             canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
@@ -282,8 +240,8 @@ public class WheelView extends View {
         }
     }
 
-    private CharSequence getCharSequence(int index) {
-        int size = mScroller.getItemSize();
+    CharSequence getCharSequence(int index) {
+        int size = mEntries.size();
         if (size == 0) return null;
         CharSequence text = null;
         if (isCyclic()) {
@@ -344,12 +302,10 @@ public class WheelView extends View {
 
     public void setTextSize(int textSize) {
         mTextSize = textSize;
-        if (mPaint != null) {
-            mPaint.setTextSize(textSize);
-            Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
-            baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
-        }
-        itemSizeChanged = true;
+        mPaint.setTextSize(textSize);
+        Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
+        baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
+        measureItemSize();
         requestLayout();
     }
 
@@ -421,9 +377,8 @@ public class WheelView extends View {
         if (entries != null && entries.length > 0) {
             Collections.addAll(mEntries, entries);
         }
-        mScroller.setItemSize(mEntries.size());
+        measureItemSize();
         mScroller.setCurrentIndex(0, false);
-        itemSizeChanged = true;
         requestLayout();
     }
 

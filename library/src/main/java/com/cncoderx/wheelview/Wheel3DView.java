@@ -25,7 +25,7 @@ public class Wheel3DView extends WheelView {
     }
 
     public Wheel3DView(Context context, AttributeSet attrs) {
-        super(context, attrs, 0, R.style.WheelView);
+        super(context, attrs);
 
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.Wheel3DView);
         int toward = a.getInt(R.styleable.Wheel3DView_toward, 0);
@@ -42,7 +42,7 @@ public class Wheel3DView extends WheelView {
      */
     public int getPrefWidth() {
         int prefWidth = super.getPrefWidth();
-        int innerHeight = (int) (getItemHeight() * getVisibleItems() * 2 / Math.PI);
+        int innerHeight = (int) (itemHeight * getVisibleItems() * 2 / Math.PI);
         int towardRange = (int) (Math.sin(Math.PI / 48) * innerHeight);
         // 必须增加滚轮的内边距,否则当toward不为none时文字显示不全
         prefWidth += towardRange;
@@ -53,9 +53,8 @@ public class Wheel3DView extends WheelView {
      * @return 控件的预算高度
      */
     public int getPrefHeight() {
-        measureItemBounds();
         int padding = getPaddingTop() + getPaddingBottom();
-        int innerHeight = (int) (getItemHeight() * getVisibleItems() * 2 / Math.PI);
+        int innerHeight = (int) (itemHeight * getVisibleItems() * 2 / Math.PI);
         return innerHeight + padding;
     }
 
@@ -63,9 +62,8 @@ public class Wheel3DView extends WheelView {
      * 根据控件的测量高度，计算可见项的数量
      */
     protected void calcVisibleItems() {
-        measureItemBounds();
         int innerHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-        int items = (int) (innerHeight * Math.PI / getItemHeight() / 2);
+        int items = (int) (innerHeight * Math.PI / itemHeight / 2);
         setVisibleItems(items);
     }
 
@@ -91,7 +89,7 @@ public class Wheel3DView extends WheelView {
         // 滚轮的半径
         final int r = (getHeight() - getPaddingTop() - getPaddingBottom()) / 2;
         // 和中间选项的距离
-        final int range = (index - mScroller.getItemIndex()) * mScroller.getItemHeight() - offset;
+        final int range = (index - mScroller.getItemIndex()) * itemHeight - offset;
         // 当滑动的角度和y轴垂直时（此时文字已经显示为一条线），不绘制文字
         if (Math.abs(range) > r * Math.PI / 2) return;
         final double angle = (double) range / r;
@@ -111,10 +109,8 @@ public class Wheel3DView extends WheelView {
         int clipTop = getPaddingTop();
         int clipBottom = getHeight() - getPaddingBottom();
 
-        int dl = getLineSpace() / 2;
-        int dh = dl + maxTextHeight;
         // 绘制两条分界线之间的文字
-        if (Math.abs(range) <= dl) {
+        if (Math.abs(range) <= 0) {
             mPaint.setColor(getSelectedColor());
             canvas.save();
             canvas.translate(refractX, 0);
@@ -123,7 +119,7 @@ public class Wheel3DView extends WheelView {
             canvas.restore();
         }
         // 绘制与下分界线相交的文字
-        else if (range > dl && range < dh) {
+        else if (range > 0 && range < itemHeight) {
             mPaint.setColor(getSelectedColor());
             canvas.save();
             canvas.translate(refractX, 0);
@@ -138,7 +134,7 @@ public class Wheel3DView extends WheelView {
             canvas.restore();
         }
         // 绘制与上分界线相交的文字
-        else if (range < -dl && range > -dh) {
+        else if (range < 0 && range > -itemHeight) {
             mPaint.setColor(getSelectedColor());
             canvas.save();
             canvas.translate(refractX, 0);
@@ -173,24 +169,6 @@ public class Wheel3DView extends WheelView {
         canvas.scale(scale, 1, centerX, centerY);
         canvas.concat(mMatrix);
         canvas.drawText(text, 0, text.length(), centerX, centerY - baseline, mPaint);
-    }
-
-    private CharSequence getCharSequence(int index) {
-        int size = mScroller.getItemSize();
-        if (size == 0) return null;
-        CharSequence text = null;
-        if (isCyclic()) {
-            int i = index % size;
-            if (i < 0) {
-                i += size;
-            }
-            text = mEntries.get(i);
-        } else {
-            if (index >= 0 && index < size) {
-                text = mEntries.get(index);
-            }
-        }
-        return text;
     }
 
     public int getToward() {
