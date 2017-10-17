@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
         mYear = 1980;
         mMonth = 1;
         mDay = 1;
-//        updateDayEntries();
+        updateDayEntries();
         updateTextView();
     }
 
