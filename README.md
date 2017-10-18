@@ -2,7 +2,7 @@
 这个库包含两种类型的滚轮：`普通滚轮`和`立体滚轮`，普通滚轮调用WheelView，立体滚轮调用Wheel3DView。两种滚轮实现原理相同，但显示效果不同。立体滚轮类似IOS时间选择控件，效果如下。
 
 ## 演示
-![img](https://github.com/CNCoderX/WheelView/blob/master/example.gif)
+![img](https://github.com/CNCoderX/WheelView/blob/master/example2.gif)! [img](https://github.com/CNCoderX/WheelView/blob/master/example.gif)
 
 ## 添加依赖
 ```compile
