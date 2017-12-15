@@ -1,7 +1,6 @@
 package com.cncoderx.wheelview;
 
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
@@ -11,12 +10,6 @@ import android.util.AttributeSet;
  * @author cncoderx
  */
 public class Wheel3DView extends WheelView {
-    public static final int TOWARD_NONE = 0;
-    public static final int TOWARD_LEFT = -1;
-    public static final int TOWARD_RIGHT = 1;
-
-    private int mToward;
-
     private Camera mCamera;
     private Matrix mMatrix;
 
@@ -26,13 +19,6 @@ public class Wheel3DView extends WheelView {
 
     public Wheel3DView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.Wheel3DView);
-        int toward = a.getInt(R.styleable.Wheel3DView_toward, 0);
-        a.recycle();
-
-        setToward(toward);
-
         mCamera = new Camera();
         mMatrix = new Matrix();
     }
@@ -67,22 +53,6 @@ public class Wheel3DView extends WheelView {
         setVisibleItems(items);
     }
 
-    float getRefractX() {
-        float dx;
-        switch (mToward) {
-            case TOWARD_LEFT:
-                dx = -getTextSize() * .07f;
-                break;
-            case TOWARD_RIGHT:
-                dx = getTextSize() * .07f;
-                break;
-            default:
-                dx = getTextSize() * .05f;
-                break;
-        }
-        return dx;
-    }
-
     protected void drawItem(Canvas canvas, int index, int offset) {
         CharSequence text = getCharSequence(index);
         if (text == null) return;
@@ -92,18 +62,20 @@ public class Wheel3DView extends WheelView {
         final int range = (index - mScroller.getItemIndex()) * itemHeight - offset;
         // 当滑动的角度和y轴垂直时（此时文字已经显示为一条线），不绘制文字
         if (Math.abs(range) > r * Math.PI / 2) return;
+
         final double angle = (double) range / r;
-        // x轴滚动的角度
+        // 绕x轴滚动的角度
         float rotate = (float) Math.toDegrees(-angle);
         // 滚动的距离映射到x轴的长度
-        float translateX = (float) (Math.cos(angle) * Math.sin(Math.PI / 48) * r * mToward);
+//        float translateX = (float) (Math.cos(angle) * Math.sin(Math.PI / 36) * r * mToward);
         // 滚动的距离映射到y轴的长度
         float translateY = (float) (Math.sin(angle) * r);
-
-        float scaleOffset = (float) Math.abs(Math.sin(angle / 2) * (itemHeight - getLineSpace()));
-
+        // 滚动的距离映射到z轴的长度
+        float translateZ = (float) ((1 - Math.cos(angle)) * r);
         // 折射偏移量x
-//        float refractX = getRefractX();
+        float refractX = getTextSize() * .05f;
+        // 透明度
+        int alpha = (int) (Math.cos(angle) * 255);
 
         int clipLeft = getPaddingLeft();
         int clipRight = getWidth() - getPaddingRight();
@@ -114,86 +86,67 @@ public class Wheel3DView extends WheelView {
         if (Math.abs(range) <= 0) {
             mPaint.setColor(getSelectedColor());
             canvas.save();
-//            canvas.translate(refractX, 0);
+            canvas.translate(refractX, 0);
             canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            drawText(canvas, text, translateX, translateY, rotate, 1);
+            drawText(canvas, text, 0, translateY, translateZ, rotate);
             canvas.restore();
         }
         // 绘制与下分界线相交的文字
         else if (range > 0 && range < itemHeight) {
             mPaint.setColor(getSelectedColor());
             canvas.save();
-//            canvas.translate(refractX, 0);
+            canvas.translate(refractX, 0);
             canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            drawText(canvas, text, translateX, translateY, rotate, 1);
+            drawText(canvas, text, 0, translateY, translateZ, rotate);
             canvas.restore();
 
             mPaint.setColor(getUnselectedColor());
+            mPaint.setAlpha(alpha);
             canvas.save();
             canvas.clipRect(clipLeft, lowerLimit, clipRight, clipBottom);
-            drawText(canvas, text, translateX, translateY, rotate, scaleOffset);
+            drawText(canvas, text, 0, translateY, translateZ, rotate);
             canvas.restore();
         }
         // 绘制与上分界线相交的文字
         else if (range < 0 && range > -itemHeight) {
             mPaint.setColor(getSelectedColor());
             canvas.save();
-//            canvas.translate(refractX, 0);
+            canvas.translate(refractX, 0);
             canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            drawText(canvas, text, translateX, translateY, rotate, 1);
+            drawText(canvas, text, 0, translateY, translateZ, rotate);
             canvas.restore();
 
             mPaint.setColor(getUnselectedColor());
+            mPaint.setAlpha(alpha);
             canvas.save();
             canvas.clipRect(clipLeft, clipTop, clipRight, upperLimit);
-            drawText(canvas, text, translateX, translateY, rotate, scaleOffset);
+            drawText(canvas, text, 0, translateY, translateZ, rotate);
             canvas.restore();
         } else {
             mPaint.setColor(getUnselectedColor());
+            mPaint.setAlpha(alpha);
             canvas.save();
             canvas.clipRect(clipLeft, clipTop, clipRight, clipBottom);
-            drawText(canvas, text, translateX, translateY, rotate, scaleOffset);
+            drawText(canvas, text, 0, translateY, translateZ, rotate);
             canvas.restore();
         }
     }
 
-    private void drawText(Canvas canvas, CharSequence text, float translateX, float translateY, float rotate, float scaleOffset) {
+    private void drawText(Canvas canvas, CharSequence text, float translateX, float translateY, float translateZ, float rotateX) {
         mCamera.save();
-        mCamera.rotateX(rotate);
+        mCamera.translate(translateX, 0, translateZ);
+        mCamera.rotateX(rotateX);
         mCamera.getMatrix(mMatrix);
         mCamera.restore();
 
-        // 设置绕x轴旋转的中心点位置
-        mMatrix.preTranslate(-centerX, -centerY);
-        mMatrix.postTranslate(centerX + translateX, centerY + translateY);
+        final float x = centerX;
+        final float y = centerY + translateY;
 
-        final int width = canvas.getWidth();
-        final int height = canvas.getHeight();
-        float scaleX = (width - scaleOffset) / width;
-        float scaleY = (height - scaleOffset) / height;
-        canvas.scale(scaleX, scaleY, centerX, centerY);
+        // 设置绕x轴旋转的中心点位置
+        mMatrix.preTranslate(-x, -y);
+        mMatrix.postTranslate(x, y);
 
         canvas.concat(mMatrix);
-        canvas.drawText(text, 0, text.length(), centerX, centerY - baseline, mPaint);
-    }
-
-    public int getToward() {
-        return mToward;
-    }
-
-    public void setToward(int toward) {
-        switch (toward) {
-            case TOWARD_LEFT:
-                mToward = TOWARD_LEFT;
-                break;
-            case TOWARD_RIGHT:
-                mToward = TOWARD_RIGHT;
-                break;
-            case TOWARD_NONE:
-            default:
-                mToward = TOWARD_NONE;
-                break;
-        }
-        requestLayout();
+        canvas.drawText(text, 0, text.length(), x, y - baseline, mPaint);
     }
 }

@@ -54,8 +54,8 @@ public class WheelView extends View {
         int textSize = a.getDimensionPixelSize(R.styleable.WheelView_textSize, mTextSize);
         int selectedColor = a.getColor(R.styleable.WheelView_selectedColor, 0);
         int unselectedColor = a.getColor(R.styleable.WheelView_unselectedColor, 0);
-        Drawable dividerTop = a.getDrawable(R.styleable.WheelView_dividerTop);
-        Drawable dividerBottom = a.getDrawable(R.styleable.WheelView_dividerBottom);
+        mDividerTop = a.getDrawable(R.styleable.WheelView_divider);
+        mDividerBottom = a.getDrawable(R.styleable.WheelView_divider);
         CharSequence[] entries = a.getTextArray(R.styleable.WheelView_entries);
         a.recycle();
 
@@ -71,8 +71,6 @@ public class WheelView extends View {
         setTextSize(textSize);
         setSelectedColor(selectedColor);
         setUnselectedColor(unselectedColor);
-        setDividerTop(dividerTop);
-        setDividerBottom(dividerBottom);
         setEntries(entries);
     }
 
@@ -105,13 +103,17 @@ public class WheelView extends View {
         upperLimit = centerY - itemHeight / 2;
         // 计算下方分割线的高度
         lowerLimit = centerY + itemHeight / 2;
+
         if (mDividerTop != null) {
             int h = mDividerTop.getIntrinsicHeight();
-            mDividerTop.setBounds(getPaddingLeft(), upperLimit, getWidth() - getPaddingRight(), upperLimit + h);
+            mDividerTop.setBounds(getPaddingLeft(), upperLimit,
+                    getWidth() - getPaddingRight(), upperLimit + h);
+
         }
         if (mDividerBottom != null) {
             int h = mDividerBottom.getIntrinsicHeight();
-            mDividerBottom.setBounds(getPaddingLeft(), lowerLimit - h, getWidth() - getPaddingRight(), lowerLimit);
+            mDividerBottom.setBounds(getPaddingLeft(), lowerLimit - h,
+                    getWidth() - getPaddingRight(), lowerLimit);
         }
     }
 
@@ -331,26 +333,6 @@ public class WheelView extends View {
 
     public void setUnselectedColor(int unselectedColor) {
         mUnselectedColor = unselectedColor;
-        invalidate();
-    }
-
-    public Drawable getDividerTop() {
-        return mDividerTop;
-    }
-
-    public void setDividerTop(Drawable dividerTop) {
-        mDividerTop = dividerTop;
-        requestLayout();
-        invalidate();
-    }
-
-    public Drawable getDividerBottom() {
-        return mDividerBottom;
-    }
-
-    public void setDividerBottom(Drawable dividerBottom) {
-        mDividerBottom = dividerBottom;
-        requestLayout();
         invalidate();
     }
 

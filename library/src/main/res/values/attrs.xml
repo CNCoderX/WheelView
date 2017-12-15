@@ -8,8 +8,7 @@
         <attr name="textSize" format="dimension"/>
         <attr name="selectedColor" format="color"/>
         <attr name="unselectedColor" format="color"/>
-        <attr name="dividerTop" format="reference"/>
-        <attr name="dividerBottom" format="reference"/>
+        <attr name="divider" format="reference"/>
     </declare-styleable>
 
     <declare-styleable name="Wheel3DView">

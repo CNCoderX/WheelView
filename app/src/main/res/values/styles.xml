@@ -1,16 +1,10 @@
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme.Holo">
-        <!-- Customize your theme here. -->
-    </style>
-
     <style name="DatePickerStyle">
-        <item name="lineSpace">16dp</item>
+        <item name="lineSpace">12dp</item>
         <item name="textSize">24sp</item>
         <item name="selectedColor">#fff</item>
         <item name="unselectedColor">#606060</item>
-        <item name="dividerTop">@drawable/date_picker_divider</item>
-        <item name="dividerBottom">@drawable/date_picker_divider</item>
+        <item name="divider">@drawable/date_picker_divider</item>
     </style>
 </resources>

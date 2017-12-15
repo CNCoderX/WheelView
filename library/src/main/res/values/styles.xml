@@ -5,7 +5,6 @@
         <item name="textSize">20sp</item>
         <item name="selectedColor">@color/selected_text_color</item>
         <item name="unselectedColor">@color/unselected_text_color</item>
-        <item name="dividerTop">@drawable/divider</item>
-        <item name="dividerBottom">@drawable/divider</item>
+        <item name="divider">@drawable/divider</item>
     </style>
 </resources>
