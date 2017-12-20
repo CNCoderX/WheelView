@@ -83,12 +83,12 @@ public class WheelView extends View {
         if (widthSpecMode == MeasureSpec.EXACTLY
                 && heightSpecMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(widthSpecSize, heightSpecSize);
-            calcVisibleItems();
+            mVisibleItems = getPrefVisibleItems();
         } else if (widthSpecMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(widthSpecSize, getPrefHeight());
         } else if (heightSpecMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(getPrefWidth(), heightSpecSize);
-            calcVisibleItems();
+            mVisibleItems = getPrefVisibleItems();
         } else {
             setMeasuredDimension(getPrefWidth(), getPrefHeight());
         }
@@ -136,12 +136,11 @@ public class WheelView extends View {
     }
 
     /**
-     * 根据控件的测量高度，计算可见项的数量
+     * @return 可见项的预算数量
      */
-    protected void calcVisibleItems() {
+    public int getPrefVisibleItems() {
         int innerHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-        int items = innerHeight / itemHeight;
-        setVisibleItems(items);
+        return innerHeight / itemHeight;
     }
 
     void measureItemSize() {

@@ -4,7 +4,7 @@ apply plugin: 'com.jfrog.bintray'
 def siteUrl = 'https://github.com/CNCoderX/WheelView'
 def gitUrl = 'https://github.com/CNCoderX/WheelView.git'
 
-version = "1.2.0"
+version = "1.2.1"
 group = "com.cncoderx.wheelview"
 def libName = "WheelView"
 def libDesc = "like ios wheel selector"

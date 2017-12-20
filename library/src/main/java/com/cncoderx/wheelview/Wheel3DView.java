@@ -47,10 +47,9 @@ public class Wheel3DView extends WheelView {
     /**
      * 根据控件的测量高度，计算可见项的数量
      */
-    protected void calcVisibleItems() {
+    public int getPrefVisibleItems() {
         int innerHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-        int items = (int) (innerHeight * Math.PI / itemHeight / 2);
-        setVisibleItems(items);
+        return (int) (innerHeight * Math.PI / itemHeight / 2);
     }
 
     protected void drawItem(Canvas canvas, int index, int offset) {

@@ -1,4 +1,4 @@
-## 使用说明
+﻿## 使用说明
 这个库包含两种类型的滚轮：`普通滚轮`和`立体滚轮`，普通滚轮调用WheelView，立体滚轮调用Wheel3DView。两种滚轮实现原理相同，但显示效果不同。立体滚轮类似IOS时间选择控件，效果如下。
 
 ## 演示
@@ -6,7 +6,7 @@
 
 ## 添加依赖
 ```compile
-compile 'com.cncoderx.wheelview:library:1.2.0'
+compile 'com.cncoderx.wheelview:library:1.2.1'
 ```
 ## 使用方法
 #### 在xml文件中添加
