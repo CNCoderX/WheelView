@@ -6,7 +6,7 @@
 
 ## 添加依赖
 ```compile
-compile 'com.cncoderx.wheelview:library:1.2.1'
+compile 'com.cncoderx.wheelview:library:1.2.2'
 ```
 ## 使用方法
 #### 在xml文件中添加
