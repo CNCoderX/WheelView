@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -366,6 +367,17 @@ public class WheelView extends View {
         mEntries.clear();
         if (entries != null && entries.length > 0) {
             Collections.addAll(mEntries, entries);
+        }
+        mScroller.reset();
+        measureItemSize();
+        requestLayout();
+        invalidate();
+    }
+
+    public void setEntries(Collection<? extends CharSequence> entries) {
+        mEntries.clear();
+        if (entries != null && entries.size() > 0) {
+            mEntries.addAll(entries);
         }
         mScroller.reset();
         measureItemSize();
