@@ -165,8 +165,8 @@ public class WheelView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        drawItems(canvas);
         drawHighlight(canvas);
+        drawItems(canvas);
         drawDivider(canvas);
     }
 
