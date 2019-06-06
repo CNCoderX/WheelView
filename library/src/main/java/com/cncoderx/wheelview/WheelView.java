@@ -4,14 +4,14 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
-import android.text.Layout;
+import android.graphics.Rect;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -20,24 +20,19 @@ import java.util.List;
  * @author cncoderx
  */
 public class WheelView extends View {
-    private boolean mCyclic;
-    private int mVisibleItems = 9;
-    private int mLineSpace = 10;
-    private int mTextSize = 20;
-    private int mSelectedColor;
-    private int mUnselectedColor;
-    private Drawable mDividerTop;
-    private Drawable mDividerBottom;
+    boolean mCyclic;
+    int mItemCount;
+    int mItemWidth;
+    int mItemHeight;
+    Rect mClipRectTop;
+    Rect mClipRectMiddle;
+    Rect mClipRectBottom;
 
-    int centerX;
-    int centerY;
-    int upperLimit;
-    int lowerLimit;
-    int baseline;
-    int itemWidth;
-    int itemHeight;
+    TextPaint mTextPaint;
+    TextPaint mSelectedTextPaint;
+    Paint mDividerPaint;
+    Paint mHighlightPaint;
 
-    Paint mPaint;
     WheelScroller mScroller;
 
     final List<CharSequence> mEntries = new ArrayList<>();
@@ -48,31 +43,51 @@ public class WheelView extends View {
 
     public WheelView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.WheelView, 0, R.style.WheelView);
-        boolean cyclic = a.getBoolean(R.styleable.WheelView_cyclic, false);
-        int visibleItems = a.getInt(R.styleable.WheelView_visibleItems, mVisibleItems);
-        int lineSpace = a.getDimensionPixelOffset(R.styleable.WheelView_lineSpace, mLineSpace);
-        int textSize = a.getDimensionPixelSize(R.styleable.WheelView_textSize, mTextSize);
-        int selectedColor = a.getColor(R.styleable.WheelView_selectedColor, 0);
-        int unselectedColor = a.getColor(R.styleable.WheelView_unselectedColor, 0);
-        mDividerTop = a.getDrawable(R.styleable.WheelView_divider);
-        mDividerBottom = a.getDrawable(R.styleable.WheelView_divider);
-        CharSequence[] entries = a.getTextArray(R.styleable.WheelView_entries);
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.WheelView);
+        boolean cyclic = a.getBoolean(R.styleable.WheelView_wheelCyclic, false);
+        int itemCount = a.getInt(R.styleable.WheelView_wheelItemCount, 9);
+        int itemWidth = a.getDimensionPixelOffset(R.styleable.WheelView_wheelItemWidth, $dp(R.dimen.wheel_item_width));
+        int itemHeight = a.getDimensionPixelOffset(R.styleable.WheelView_wheelItemHeight, $dp(R.dimen.wheel_item_height));
+        int textSize = a.getDimensionPixelSize(R.styleable.WheelView_wheelTextSize, $sp(R.dimen.wheel_text_size));
+        int textColor = a.getColor(R.styleable.WheelView_wheelTextColor, $color(R.color.wheel_text_color));
+        int selectedTextColor = a.getColor(R.styleable.WheelView_wheelSelectedTextColor, $color(R.color.wheel_selected_text_color));
+        int dividerColor = a.getColor(R.styleable.WheelView_wheelDividerColor, $color(R.color.wheel_divider_color));
+        int highlightColor = a.getColor(R.styleable.WheelView_wheelHighlightColor, $color(R.color.wheel_highlight_color));
+        CharSequence[] entries = a.getTextArray(R.styleable.WheelView_wheelEntries);
         a.recycle();
 
-        mPaint = new TextPaint();
-        mPaint.setAntiAlias(true);
-        mPaint.setTextAlign(Paint.Align.CENTER);
+        mCyclic = cyclic;
+        mItemCount = itemCount;
+        mItemWidth = itemWidth;
+        mItemHeight = itemHeight;
+
+        mTextPaint = new TextPaint();
+        mTextPaint.setAntiAlias(true);
+        mTextPaint.setTextAlign(Paint.Align.CENTER);
+        mTextPaint.setTextSize(textSize);
+        mTextPaint.setColor(textColor);
+
+        mSelectedTextPaint = new TextPaint();
+        mSelectedTextPaint.setAntiAlias(true);
+        mSelectedTextPaint.setTextAlign(Paint.Align.CENTER);
+        mSelectedTextPaint.setTextSize(textSize);
+        mSelectedTextPaint.setColor(selectedTextColor);
+
+        mDividerPaint = new Paint();
+        mDividerPaint.setAntiAlias(true);
+        mDividerPaint.setStrokeWidth(getResources().getDimensionPixelOffset(R.dimen.wheel_divider_height));
+        mDividerPaint.setColor(dividerColor);
+
+        mHighlightPaint = new Paint();
+        mHighlightPaint.setAntiAlias(true);
+        mHighlightPaint.setStyle(Paint.Style.FILL);
+        mHighlightPaint.setColor(highlightColor);
+
+        if (entries != null && entries.length > 0) {
+            mEntries.addAll(Arrays.asList(entries));
+        }
 
         mScroller = new WheelScroller(context, this);
-
-        setCyclic(cyclic);
-        setVisibleItems(visibleItems);
-        setLineSpace(lineSpace);
-        setTextSize(textSize);
-        setSelectedColor(selectedColor);
-        setUnselectedColor(unselectedColor);
-        setEntries(entries);
     }
 
     @Override
@@ -84,86 +99,81 @@ public class WheelView extends View {
         if (widthSpecMode == MeasureSpec.EXACTLY
                 && heightSpecMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(widthSpecSize, heightSpecSize);
-            mVisibleItems = getPrefVisibleItems();
         } else if (widthSpecMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(widthSpecSize, getPrefHeight());
         } else if (heightSpecMode == MeasureSpec.EXACTLY) {
             setMeasuredDimension(getPrefWidth(), heightSpecSize);
-            mVisibleItems = getPrefVisibleItems();
         } else {
             setMeasuredDimension(getPrefWidth(), getPrefHeight());
         }
-
-        centerX = (getMeasuredWidth() + getPaddingLeft() - getPaddingRight()) / 2;
-        centerY = (getMeasuredHeight() + getPaddingTop() - getPaddingBottom()) / 2;
+        updateClipRect();
     }
 
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        // 计算上方分割线的高度
-        upperLimit = centerY - itemHeight / 2;
-        // 计算下方分割线的高度
-        lowerLimit = centerY + itemHeight / 2;
+    private void updateClipRect() {
+        int clipLeft = getPaddingLeft();
+        int clipRight = getMeasuredWidth() - getPaddingRight();
+        int clipTop = getPaddingTop();
+        int clipBottom = getMeasuredHeight() - getPaddingBottom();
+        int clipVMiddle = (clipTop + clipBottom) / 2;
 
-        if (mDividerTop != null) {
-            int h = mDividerTop.getIntrinsicHeight();
-            mDividerTop.setBounds(getPaddingLeft(), upperLimit,
-                    getWidth() - getPaddingRight(), upperLimit + h);
+        mClipRectMiddle = new Rect();
+        mClipRectMiddle.left = clipLeft;
+        mClipRectMiddle.right = clipRight;
+        mClipRectMiddle.top = clipVMiddle - mItemHeight / 2;
+        mClipRectMiddle.bottom = clipVMiddle + mItemHeight / 2;
 
-        }
-        if (mDividerBottom != null) {
-            int h = mDividerBottom.getIntrinsicHeight();
-            mDividerBottom.setBounds(getPaddingLeft(), lowerLimit - h,
-                    getWidth() - getPaddingRight(), lowerLimit);
-        }
+        mClipRectTop = new Rect();
+        mClipRectTop.left = clipLeft;
+        mClipRectTop.right = clipRight;
+        mClipRectTop.top = clipTop;
+        mClipRectTop.bottom = clipVMiddle - mItemHeight / 2;
+
+        mClipRectBottom = new Rect();
+        mClipRectBottom.left = clipLeft;
+        mClipRectBottom.right = clipRight;
+        mClipRectBottom.top = clipVMiddle + mItemHeight / 2;
+        mClipRectBottom.bottom = clipBottom;
+    }
+
+    int $dp(int resId) {
+        return getResources().getDimensionPixelOffset(resId);
+    }
+
+    int $sp(int resId) {
+        return getResources().getDimensionPixelSize(resId);
+    }
+
+    int $color(int resId) {
+        return getResources().getColor(resId);
     }
 
     /**
      * @return 控件的预算宽度
      */
     public int getPrefWidth() {
-        int padding = getPaddingLeft() + getPaddingRight();
-        int innerWidth = (int) (itemWidth + mTextSize * .5f);
-        return innerWidth + padding;
+        int paddingHorizontal = getPaddingLeft() + getPaddingRight();
+        return paddingHorizontal + mItemWidth;
     }
 
     /**
      * @return 控件的预算高度
      */
     public int getPrefHeight() {
-        int padding = getPaddingTop() + getPaddingBottom();
-        int innerHeight = itemHeight * mVisibleItems;
-        return innerHeight + padding;
-    }
-
-    /**
-     * @return 可见项的预算数量
-     */
-    public int getPrefVisibleItems() {
-        int innerHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-        return innerHeight / itemHeight;
-    }
-
-    void measureItemSize() {
-        int width = 0;
-        for (CharSequence cs : mEntries) {
-            float w = Layout.getDesiredWidth(cs, (TextPaint) mPaint);
-            width = Math.max(width, Math.round(w));
-        }
-        int height = Math.round(mPaint.getFontMetricsInt(null) + mLineSpace);
-        itemWidth = width;
-        if (itemHeight != height) {
-            // 每一项的高度改变时，需要重新计算滚动偏移量；
-//            mScroller.setCurrentIndex(mScroller.getCurrentIndex(), false);
-            itemHeight = height;
-        }
+        int paddingVertical = getPaddingTop() + getPaddingBottom();
+        return paddingVertical + mItemHeight * mItemCount;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        drawItems(canvas);
+        drawHighlight(canvas);
+        drawDivider(canvas);
+    }
+
+    private void drawItems(Canvas canvas) {
         final int index = mScroller.getItemIndex();
         final int offset = mScroller.getItemOffset();
-        final int hf = (mVisibleItems + 1) / 2;
+        final int hf = (mItemCount + 1) / 2;
         final int minIdx, maxIdx;
         if (offset < 0) {
             minIdx = index - hf - 1;
@@ -178,66 +188,64 @@ public class WheelView extends View {
         for (int i = minIdx; i < maxIdx; i++) {
             drawItem(canvas, i, offset);
         }
-        if (mDividerTop != null) {
-            mDividerTop.draw(canvas);
-        }
-        if (mDividerBottom != null) {
-            mDividerBottom.draw(canvas);
-        }
     }
 
     protected void drawItem(Canvas canvas, int index, int offset) {
         CharSequence text = getCharSequence(index);
         if (text == null) return;
 
+        final int centerX = mClipRectMiddle.centerX();
+        final int centerY = mClipRectMiddle.centerY();
+
         // 和中间选项的距离
-        final int range = (index - mScroller.getItemIndex()) * itemHeight - offset;
+        final int range = (index - mScroller.getItemIndex()) * mItemHeight - offset;
 
-        int clipLeft = getPaddingLeft();
-        int clipRight = getWidth() - getPaddingRight();
-        int clipTop = getPaddingTop();
-        int clipBottom = getHeight() - getPaddingBottom();
+        Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
+        int baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
 
-        // 绘制两条分界线之间的文字
-        if (Math.abs(range) <= 0) {
-            mPaint.setColor(mSelectedColor);
+        // 绘制与下分界线相交的文字
+        if (range > 0 && range < mItemHeight) {
             canvas.save();
-            canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mPaint);
+            canvas.clipRect(mClipRectMiddle);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mSelectedTextPaint);
+            canvas.restore();
+
+            canvas.save();
+            canvas.clipRect(mClipRectBottom);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mTextPaint);
             canvas.restore();
         }
-        // 绘制与下分界线相交的文字
-        else if (range > 0 && range < itemHeight) {
-            mPaint.setColor(mSelectedColor);
+        // 绘制下分界线下方的文字
+        else if (range >= mItemHeight) {
             canvas.save();
-            canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mPaint);
-            canvas.restore();
-
-            mPaint.setColor(mUnselectedColor);
-            canvas.save();
-            canvas.clipRect(clipLeft, lowerLimit, clipRight, clipBottom);
-            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mPaint);
+            canvas.clipRect(mClipRectBottom);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mTextPaint);
             canvas.restore();
         }
         // 绘制与上分界线相交的文字
-        else if (range < 0 && range > -itemHeight) {
-            mPaint.setColor(mSelectedColor);
+        else if (range < 0 && range > -mItemHeight) {
             canvas.save();
-            canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mPaint);
+            canvas.clipRect(mClipRectMiddle);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mSelectedTextPaint);
             canvas.restore();
 
-            mPaint.setColor(mUnselectedColor);
             canvas.save();
-            canvas.clipRect(clipLeft, clipTop, clipRight, upperLimit);
-            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mPaint);
+            canvas.clipRect(mClipRectTop);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mTextPaint);
             canvas.restore();
-        } else {
-            mPaint.setColor(mUnselectedColor);
+        }
+        // 绘制上分界线上方的文字
+        else if (range <= -mItemHeight) {
             canvas.save();
-            canvas.clipRect(clipLeft, clipTop, clipRight, clipBottom);
-            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mPaint);
+            canvas.clipRect(mClipRectTop);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mTextPaint);
+            canvas.restore();
+        }
+        // 绘制两条分界线之间的文字
+        else {
+            canvas.save();
+            canvas.clipRect(mClipRectMiddle);
+            canvas.drawText(text, 0, text.length(), centerX, centerY + range - baseline, mSelectedTextPaint);
             canvas.restore();
         }
     }
@@ -260,6 +268,18 @@ public class WheelView extends View {
         return text;
     }
 
+    private void drawHighlight(Canvas canvas) {
+        canvas.drawRect(mClipRectMiddle, mHighlightPaint);
+    }
+
+    private void drawDivider(Canvas canvas) {
+        // 绘制上层分割线
+        canvas.drawLine(mClipRectMiddle.left, mClipRectMiddle.top, mClipRectMiddle.right, mClipRectMiddle.top, mDividerPaint);
+
+        // 绘制下层分割线
+        canvas.drawLine(mClipRectMiddle.left, mClipRectMiddle.bottom, mClipRectMiddle.right, mClipRectMiddle.bottom, mDividerPaint);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         return mScroller.onTouchEvent(event);
@@ -280,59 +300,31 @@ public class WheelView extends View {
         invalidate();
     }
 
-    public int getVisibleItems() {
-        return mVisibleItems;
-    }
-
-    public void setVisibleItems(int visibleItems) {
-        mVisibleItems = Math.abs(visibleItems / 2 * 2 + 1); // 当传入的值为偶数时,换算成奇数;
-        mScroller.reset();
-        requestLayout();
-        invalidate();
-    }
-
-    public int getLineSpace() {
-        return mLineSpace;
-    }
-
-    public void setLineSpace(int lineSpace) {
-        mLineSpace = lineSpace;
-        mScroller.reset();
-        measureItemSize();
-        requestLayout();
-        invalidate();
-    }
-
-    public int getTextSize() {
-        return mTextSize;
+    public float getTextSize() {
+        return mTextPaint.getTextSize();
     }
 
     public void setTextSize(int textSize) {
-        mTextSize = textSize;
-        mPaint.setTextSize(textSize);
-        Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
-        baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
-        mScroller.reset();
-        measureItemSize();
-        requestLayout();
+        mTextPaint.setTextSize(textSize);
+        mSelectedTextPaint.setTextSize(textSize);
         invalidate();
     }
 
-    public int getSelectedColor() {
-        return mSelectedColor;
+    public int getTextColor() {
+        return mTextPaint.getColor();
     }
 
-    public void setSelectedColor(int selectedColor) {
-        mSelectedColor = selectedColor;
+    public void setTextColor(int color) {
+        mTextPaint.setColor(color);
         invalidate();
     }
 
-    public int getUnselectedColor() {
-        return mUnselectedColor;
+    public int getSelectedTextColor() {
+        return mSelectedTextPaint.getColor();
     }
 
-    public void setUnselectedColor(int unselectedColor) {
-        mUnselectedColor = unselectedColor;
+    public void setSelectedTextColor(int color) {
+        mSelectedTextPaint.setColor(color);
         invalidate();
     }
 
@@ -369,8 +361,6 @@ public class WheelView extends View {
             Collections.addAll(mEntries, entries);
         }
         mScroller.reset();
-        measureItemSize();
-        requestLayout();
         invalidate();
     }
 
@@ -380,8 +370,6 @@ public class WheelView extends View {
             mEntries.addAll(entries);
         }
         mScroller.reset();
-        measureItemSize();
-        requestLayout();
         invalidate();
     }
 

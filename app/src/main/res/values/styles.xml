@@ -1,10 +1,9 @@
 <resources>
 
     <style name="DatePickerStyle">
-        <item name="lineSpace">12dp</item>
-        <item name="textSize">24sp</item>
-        <item name="selectedColor">#fff</item>
-        <item name="unselectedColor">#606060</item>
-        <item name="divider">@drawable/date_picker_divider</item>
+        <item name="wheelTextSize">24sp</item>
+        <item name="wheelTextColor">#606060</item>
+        <item name="wheelSelectedTextColor">#fff</item>
+        <item name="wheelDividerColor">#3d3d3d</item>
     </style>
 </resources>

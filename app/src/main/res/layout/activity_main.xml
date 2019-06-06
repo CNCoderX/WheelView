@@ -38,22 +38,20 @@
             android:id="@+id/wv_year"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:toward="left"
             style="@style/DatePickerStyle"/>
 
         <com.cncoderx.wheelview.Wheel3DView
             android:id="@+id/wv_month"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:cyclic="true"
+            app:wheelCyclic="true"
             style="@style/DatePickerStyle"/>
 
         <com.cncoderx.wheelview.Wheel3DView
             android:id="@+id/wv_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:cyclic="true"
-            app:toward="right"
+            app:wheelCyclic="true"
             style="@style/DatePickerStyle"/>
     </LinearLayout>
 </RelativeLayout>

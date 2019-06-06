@@ -37,13 +37,13 @@ public class WheelScroller extends Scroller {
         }
     }
 
-    private int currentIndex;
+    private int currentIndex = -1;
 
     private void doScroll(int distance) {
         mScrollOffset += distance;
         if (!mWheelView.isCyclic()) {
             // 限制滚动边界
-            final int maxOffset = (mWheelView.getItemSize() - 1) * mWheelView.itemHeight;
+            final int maxOffset = (mWheelView.getItemSize() - 1) * mWheelView.mItemHeight;
             if (mScrollOffset < 0) {
                 mScrollOffset = 0;
             } else if (mScrollOffset > maxOffset) {
@@ -65,9 +65,9 @@ public class WheelScroller extends Scroller {
     }
 
     public int getCurrentIndex() {
-        final int itemHeight = mWheelView.itemHeight;
+        final int itemHeight = mWheelView.mItemHeight;
         final int itemSize = mWheelView.getItemSize();
-        if (itemSize == 0) return 0;
+        if (itemSize == 0) return -1;
 
         int itemIndex;
         if (mScrollOffset < 0) {
@@ -83,7 +83,7 @@ public class WheelScroller extends Scroller {
     }
 
     public void setCurrentIndex(int index, boolean animated) {
-        int position = index * mWheelView.itemHeight;
+        int position = index * mWheelView.mItemHeight;
         int distance = position - mScrollOffset;
         if (distance == 0) return;
         if (animated) {
@@ -97,11 +97,11 @@ public class WheelScroller extends Scroller {
     }
 
     public int getItemIndex() {
-        return mWheelView.itemHeight == 0 ? 0 : mScrollOffset / mWheelView.itemHeight;
+        return mWheelView.mItemHeight == 0 ? 0 : mScrollOffset / mWheelView.mItemHeight;
     }
 
     public int getItemOffset() {
-        return mWheelView.itemHeight == 0 ? 0 : mScrollOffset % mWheelView.itemHeight;
+        return mWheelView.mItemHeight == 0 ? 0 : mScrollOffset % mWheelView.mItemHeight;
     }
 
     public void reset() {
@@ -115,7 +115,7 @@ public class WheelScroller extends Scroller {
      * 当滚轮结束滑行后，调整滚轮的位置，需要调用该方法
      */
     void justify() {
-        final int itemHeight = mWheelView.itemHeight;
+        final int itemHeight = mWheelView.mItemHeight;
         final int offset = mScrollOffset % itemHeight;
         if (offset > 0 && offset < itemHeight / 2) {
             isScrolling = true;

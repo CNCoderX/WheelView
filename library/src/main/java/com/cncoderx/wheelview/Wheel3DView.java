@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.util.AttributeSet;
 
 /**
@@ -23,33 +24,11 @@ public class Wheel3DView extends WheelView {
         mMatrix = new Matrix();
     }
 
-    /**
-     * @return 控件的预算宽度
-     */
-    public int getPrefWidth() {
-        int prefWidth = super.getPrefWidth();
-        int innerHeight = (int) (itemHeight * getVisibleItems() * 2 / Math.PI);
-        int towardRange = (int) (Math.sin(Math.PI / 48) * innerHeight);
-        // 必须增加滚轮的内边距,否则当toward不为none时文字显示不全
-        prefWidth += towardRange;
-        return prefWidth;
-    }
-
-    /**
-     * @return 控件的预算高度
-     */
+    @Override
     public int getPrefHeight() {
         int padding = getPaddingTop() + getPaddingBottom();
-        int innerHeight = (int) (itemHeight * getVisibleItems() * 2 / Math.PI);
+        int innerHeight = (int) (mItemHeight * mItemCount * 2 / Math.PI);
         return innerHeight + padding;
-    }
-
-    /**
-     * 根据控件的测量高度，计算可见项的数量
-     */
-    public int getPrefVisibleItems() {
-        int innerHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-        return (int) (innerHeight * Math.PI / itemHeight / 2);
     }
 
     protected void drawItem(Canvas canvas, int index, int offset) {
@@ -58,9 +37,12 @@ public class Wheel3DView extends WheelView {
         // 滚轮的半径
         final int r = (getHeight() - getPaddingTop() - getPaddingBottom()) / 2;
         // 和中间选项的距离
-        final int range = (index - mScroller.getItemIndex()) * itemHeight - offset;
+        final int range = (index - mScroller.getItemIndex()) * mItemHeight - offset;
         // 当滑动的角度和y轴垂直时（此时文字已经显示为一条线），不绘制文字
         if (Math.abs(range) > r * Math.PI / 2) return;
+
+        final int centerX = mClipRectMiddle.centerX();
+        final int centerY = mClipRectMiddle.centerY();
 
         final double angle = (double) range / r;
         // 绕x轴滚动的角度
@@ -76,62 +58,69 @@ public class Wheel3DView extends WheelView {
         // 透明度
         int alpha = (int) (Math.cos(angle) * 255);
 
-        int clipLeft = getPaddingLeft();
-        int clipRight = getWidth() - getPaddingRight();
-        int clipTop = getPaddingTop();
-        int clipBottom = getHeight() - getPaddingBottom();
-
-        // 绘制两条分界线之间的文字
-        if (Math.abs(range) <= 0) {
-            mPaint.setColor(getSelectedColor());
+        // 绘制与下分界线相交的文字
+        if (range > 0 && range < mItemHeight) {
             canvas.save();
             canvas.translate(refractX, 0);
-            canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            drawText(canvas, text, 0, translateY, translateZ, rotate);
+            canvas.clipRect(mClipRectMiddle);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mSelectedTextPaint);
+            canvas.restore();
+
+            mTextPaint.setAlpha(alpha);
+            canvas.save();
+            canvas.clipRect(mClipRectBottom);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mTextPaint);
             canvas.restore();
         }
-        // 绘制与下分界线相交的文字
-        else if (range > 0 && range < itemHeight) {
-            mPaint.setColor(getSelectedColor());
+        // 绘制下分界线下方的文字
+        else if (range >= mItemHeight) {
+            mTextPaint.setAlpha(alpha);
             canvas.save();
-            canvas.translate(refractX, 0);
-            canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            drawText(canvas, text, 0, translateY, translateZ, rotate);
-            canvas.restore();
-
-            mPaint.setColor(getUnselectedColor());
-            mPaint.setAlpha(alpha);
-            canvas.save();
-            canvas.clipRect(clipLeft, lowerLimit, clipRight, clipBottom);
-            drawText(canvas, text, 0, translateY, translateZ, rotate);
+            canvas.clipRect(mClipRectBottom);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mTextPaint);
             canvas.restore();
         }
         // 绘制与上分界线相交的文字
-        else if (range < 0 && range > -itemHeight) {
-            mPaint.setColor(getSelectedColor());
+        else if (range < 0 && range > -mItemHeight) {
             canvas.save();
             canvas.translate(refractX, 0);
-            canvas.clipRect(clipLeft, upperLimit, clipRight, lowerLimit);
-            drawText(canvas, text, 0, translateY, translateZ, rotate);
+            canvas.clipRect(mClipRectMiddle);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mSelectedTextPaint);
             canvas.restore();
 
-            mPaint.setColor(getUnselectedColor());
-            mPaint.setAlpha(alpha);
+            mTextPaint.setAlpha(alpha);
             canvas.save();
-            canvas.clipRect(clipLeft, clipTop, clipRight, upperLimit);
-            drawText(canvas, text, 0, translateY, translateZ, rotate);
+            canvas.clipRect(mClipRectTop);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mTextPaint);
             canvas.restore();
-        } else {
-            mPaint.setColor(getUnselectedColor());
-            mPaint.setAlpha(alpha);
+        }
+        // 绘制上分界线上方的文字
+        else if (range <= -mItemHeight) {
+            mTextPaint.setAlpha(alpha);
             canvas.save();
-            canvas.clipRect(clipLeft, clipTop, clipRight, clipBottom);
-            drawText(canvas, text, 0, translateY, translateZ, rotate);
+            canvas.clipRect(mClipRectTop);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mTextPaint);
+            canvas.restore();
+        }
+        // 绘制两条分界线之间的文字
+        else {
+            canvas.save();
+            canvas.translate(refractX, 0);
+            canvas.clipRect(mClipRectMiddle);
+            drawText(canvas, text, centerX, centerY, 0, translateY, translateZ, rotate, mSelectedTextPaint);
             canvas.restore();
         }
     }
 
-    private void drawText(Canvas canvas, CharSequence text, float translateX, float translateY, float translateZ, float rotateX) {
+    private void drawText(Canvas canvas,
+                          CharSequence text,
+                          float centerX,
+                          float centerY,
+                          float translateX,
+                          float translateY,
+                          float translateZ,
+                          float rotateX,
+                          Paint paint) {
         mCamera.save();
         mCamera.translate(translateX, 0, translateZ);
         mCamera.rotateX(rotateX);
@@ -145,7 +134,10 @@ public class Wheel3DView extends WheelView {
         mMatrix.preTranslate(-x, -y);
         mMatrix.postTranslate(x, y);
 
+        Paint.FontMetrics fontMetrics = paint.getFontMetrics();
+        int baseline = (int) ((fontMetrics.top + fontMetrics.bottom) / 2);
+
         canvas.concat(mMatrix);
-        canvas.drawText(text, 0, text.length(), x, y - baseline, mPaint);
+        canvas.drawText(text, 0, text.length(), x, y - baseline, paint);
     }
 }

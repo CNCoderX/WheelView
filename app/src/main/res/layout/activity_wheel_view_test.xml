@@ -6,27 +6,46 @@
     android:layout_height="match_parent"
     android:gravity="center">
 
+    <!--<attr name="wheelCyclic" format="boolean"/>-->
+    <!--<attr name="wheelEntries" format="reference"/>-->
+    <!--<attr name="wheelItemCount" format="integer"/>-->
+    <!--<attr name="wheelItemWidth" format="dimension"/>-->
+    <!--<attr name="wheelItemHeight" format="dimension"/>-->
+    <!--<attr name="wheelTextSize" format="dimension"/>-->
+    <!--<attr name="wheelTextColor" format="color"/>-->
+    <!--<attr name="wheelSelectedTextColor" format="color"/>-->
+    <!--<attr name="wheelDividerColor" format="color"/>-->
+    <!--<attr name="wheelHighlightColor" format="color"/>-->
+
     <com.cncoderx.wheelview.WheelView
         android:id="@+id/wheel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cyclic="true"
-        app:entries="@array/default_array"
-        app:visibleItems="9"
-        app:toward="none"
-        app:textSize="24sp"
-        app:lineSpace="20dp"/>
+        app:wheelCyclic="true"
+        app:wheelEntries="@array/default_array"
+        app:wheelItemCount="9"
+        app:wheelItemWidth="160dp"
+        app:wheelItemHeight="40dp"
+        app:wheelTextSize="@dimen/wheel_text_size"
+        app:wheelTextColor="@color/wheel_text_color"
+        app:wheelSelectedTextColor="@color/wheel_selected_text_color"
+        app:wheelDividerColor="@color/wheel_divider_color"
+        app:wheelHighlightColor="@color/wheel_highlight_color"/>
 
     <com.cncoderx.wheelview.Wheel3DView
         android:id="@+id/wheel3d"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="20dp"
-        app:cyclic="true"
-        app:entries="@array/default_array"
-        app:visibleItems="9"
-        app:toward="none"
-        app:textSize="24sp"
-        app:lineSpace="20dp"/>
+        app:wheelCyclic="true"
+        app:wheelEntries="@array/default_array"
+        app:wheelItemCount="9"
+        app:wheelItemWidth="160dp"
+        app:wheelItemHeight="40dp"
+        app:wheelTextSize="@dimen/wheel_text_size"
+        app:wheelTextColor="@color/wheel_text_color"
+        app:wheelSelectedTextColor="@color/wheel_selected_text_color"
+        app:wheelDividerColor="@color/wheel_divider_color"
+        app:wheelHighlightColor="@color/wheel_highlight_color" />
 
 </LinearLayout>
