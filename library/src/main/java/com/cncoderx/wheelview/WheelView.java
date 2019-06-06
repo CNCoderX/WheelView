@@ -340,7 +340,7 @@ public class WheelView extends View {
     }
 
     public CharSequence getCurrentItem() {
-        return mEntries.get(getCurrentIndex());
+        return getItem(getCurrentIndex());
     }
 
     public int getCurrentIndex() {
