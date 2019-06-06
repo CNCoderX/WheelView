@@ -6,19 +6,26 @@
 
 ## 添加依赖
 ```compile
-compile 'com.cncoderx.wheelview:library:1.2.2'
+compile 'com.cncoderx.wheelview:library:1.2.4'
 ```
 ## 使用方法
 #### 在xml文件中添加
 ```xml
 <com.cncoderx.wheelview.Wheel3DView
-    android:id="@+id/wheel"
+    android:id="@+id/wheel3d"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    app:cyclic="true"
-    app:entries="@array/array2"
-    app:visibleItems="9"
-    app:toward="right"/>
+    android:layout_marginLeft="20dp"
+    app:wheelCyclic="true"
+    app:wheelEntries="@array/default_array"
+    app:wheelItemCount="9"
+    app:wheelItemWidth="160dp"
+    app:wheelItemHeight="40dp"
+    app:wheelTextSize="@dimen/wheel_text_size"
+    app:wheelTextColor="@color/wheel_text_color"
+    app:wheelSelectedTextColor="@color/wheel_selected_text_color"
+    app:wheelDividerColor="@color/wheel_divider_color"
+    app:wheelHighlightColor="@color/wheel_highlight_color" />
 ```
 #### 在java文件中添加
 ```java
