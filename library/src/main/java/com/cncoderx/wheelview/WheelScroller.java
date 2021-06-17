@@ -107,6 +107,7 @@ public class WheelScroller extends Scroller {
     public void reset() {
         isScrolling = false;
         mScrollOffset = 0;
+        currentIndex = -1;
         notifyWheelChangedListener();
         forceFinished(true);
     }
