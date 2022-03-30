@@ -333,7 +333,7 @@ public class WheelView extends View {
     }
 
     public CharSequence getItem(int index) {
-        if (index < 0 && index >= mEntries.size())
+        if (index < 0 || index >= mEntries.size())
             return null;
 
         return mEntries.get(index);
