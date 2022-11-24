@@ -39,7 +39,8 @@ public class WheelScroller extends Scroller {
 
     private int currentIndex = -1;
 
-    private void doScroll(int distance) {
+    private boolean doScroll(int distance) {
+        int scrollOffset = mScrollOffset;
         mScrollOffset += distance;
         if (!mWheelView.isCyclic()) {
             // 限制滚动边界
@@ -50,7 +51,11 @@ public class WheelScroller extends Scroller {
                 mScrollOffset = maxOffset;
             }
         }
-        notifyWheelChangedListener();
+        if (mScrollOffset != scrollOffset) {
+            notifyWheelChangedListener();
+            return true;
+        }
+        return false;
     }
 
     void notifyWheelChangedListener() {
@@ -91,8 +96,9 @@ public class WheelScroller extends Scroller {
             startScroll(0, mScrollOffset, 0, distance, JUSTIFY_DURATION);
             mWheelView.invalidate();
         } else {
-            doScroll(distance);
-            mWheelView.invalidate();
+            if (doScroll(distance)) {
+                mWheelView.invalidate();
+            }
         }
     }
 
@@ -147,13 +153,17 @@ public class WheelScroller extends Scroller {
             case MotionEvent.ACTION_DOWN:
                 lastTouchY = event.getY();
                 forceFinished(true);
+                mWheelView.getParent().requestDisallowInterceptTouchEvent(true);
                 break;
             case MotionEvent.ACTION_MOVE:
                 float touchY = event.getY();
                 int deltaY = (int) (touchY - lastTouchY);
                 if (deltaY != 0) {
-                    doScroll(-deltaY);
-                    mWheelView.invalidate();
+                    if (doScroll(-deltaY)) {
+                        mWheelView.invalidate();
+                    } else {
+                        mWheelView.getParent().requestDisallowInterceptTouchEvent(false);
+                    }
                 }
                 lastTouchY = touchY;
                 break;
